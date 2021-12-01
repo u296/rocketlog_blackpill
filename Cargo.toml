@@ -1,7 +1,7 @@
 [package]
 authors = ["Your name <your@em.ail>"]
 name = "Project name"
-edition = "2018"
+edition = "2021"
 version = "0.1.0"
 
 [dependencies]
@@ -13,8 +13,8 @@ cortex-m = "0.7.3"
 cortex-m-rt = "0.7.0"
 
 # Change this import as required for your MCU.
-stm32-hal2 = { version = "^1.3.1", features = ["l4x3", "l4rt"]}
-# stm32-hal2 = { version = "^1.2.0", features = ["h743v", "h7rt"]}
+stm32-hal2 = { version = "^1.3.2", features = ["l4x3", "l4rt"]}
+# stm32-hal2 = { version = "^1.3.2", features = ["h743v", "h7rt"]}
 
 # cargo build/run
 [profile.dev]
