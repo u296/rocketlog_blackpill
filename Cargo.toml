@@ -1,6 +1,6 @@
 [package]
 authors = ["Your name <your@em.ail>"]
-name = "Project name"
+name = "project_name"
 edition = "2021"
 version = "0.1.0"
 

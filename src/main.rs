@@ -26,9 +26,9 @@ use panic_probe as _;
 // less here.
 use stm32_hal2::{
     self,
-    adc::{self, Adc, AdcChannel, AdcDevice},
+    adc::{self, Adc, AdcDevice},
     clocks::Clocks,
-    dma::{Dma, DmaChannel, DmaInterrupt, DmaReadBuf, DmaWriteBuf},
+    dma::{Dma, DmaChannel, DmaInterrupt},
     gpio::{Edge, Pin, Port, PinMode, OutputType, Pull},
     low_power,
     pac,
