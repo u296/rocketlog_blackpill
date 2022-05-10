@@ -8,8 +8,6 @@
 #![no_main]
 #![no_std]
 
-use core::sync::atomic::{AtomicUsize, Ordering};
-
 use cortex_m::{
     self,
     delay::Delay,
@@ -26,12 +24,10 @@ use panic_probe as _;
 // less here.
 use stm32_hal2::{
     self,
-    adc::{self, Adc, AdcDevice},
     clocks::Clocks,
     dma::{Dma, DmaChannel, DmaInterrupt},
-    gpio::{Edge, Pin, Port, PinMode, OutputType, Pull},
-    low_power,
-    pac,
+    gpio::{Edge, OutputType, Pin, PinMode, Port, Pull},
+    low_power, pac,
     timer::{Timer, TimerInterrupt},
 };
 
@@ -58,9 +54,9 @@ fn main() -> ! {
 
     loop {
         defmt::println!("Looping!"); // A print statement using DEFMT.
-        // Enter a low power mode. The program will wake once an interrupt fires.
-        // For example, the timer and GPIO interrupt above. But we haven't unmasked
-        // their lines, so they won't work - see the `interrupts` example for that.
+                                     // Enter a low power mode. The program will wake once an interrupt fires.
+                                     // For example, the timer and GPIO interrupt above. But we haven't unmasked
+                                     // their lines, so they won't work - see the `interrupts` example for that.
         low_power::sleep_now();
     }
 }
