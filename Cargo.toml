@@ -1,16 +1,15 @@
 [package]
-authors = ["Your name <your@em.ail>"]
+authors = ["u296 <u296b3g@gmail.com>"]
 name = "rocketlog_blackpill"
 edition = "2021"
 version = "0.1.0"
 
 [dependencies]
-#defmt-rtt = "0.3.0"
 
 cortex-m = "0.7"
 cortex-m-rt = "0.7"
 
-embedded-hal = "*" # depends on hal
+embedded-hal = "*" # depends on hal, use automatic version
 usbd-serial = "0.1.1"
 usb-device = "0.2.9"
 
@@ -21,13 +20,12 @@ path = "/home/todd/code/stm32-hal"
 
 
 #git = "https://github.com/u296/stm32-hal"
-#rev = "6df43b6"
+#rev = ""
 
 
 features = ["f411", "f4rt", "embedded_hal", "usbotg_fs"]
 
 [dependencies.mpu6050]
-#version = "0.1.5"
 git = "https://github.com/u296/mpu6050"
 rev = "034e09d"
 
