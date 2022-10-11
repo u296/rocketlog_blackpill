@@ -1,6 +1,5 @@
 [target.'cfg(all(target_arch = "arm", target_os = "none"))']
 # Change this runner as required for your MCU.
-runner = "probe-run --chip STM32F411CEUx" # to list chips, run `probe-run --list-chips.`
 rustflags = [
   "-C", "linker=flip-link",
   "-C", "link-arg=-Tlink.x",
