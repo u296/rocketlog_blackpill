@@ -1,0 +1,7 @@
+#!/bin/sh
+
+cargo build --release && \
+
+arm-none-eabi-objcopy -O binary target/thumbv7em-none-eabihf/release/rocketlog_blackpill /tmp/target.bin && \
+
+dfu-util -a 0 -D /tmp/target.bin -s 0x08000000
