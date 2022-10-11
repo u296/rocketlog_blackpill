@@ -1,0 +1,12 @@
+how to get program onto the board
+
+
+step 1: build with the target thumbv7em-none-eabihf
+
+step 2: convert the resulting ELF binary file to a raw .bin file using arm-none-eabi-objcopy -O binary file.elf file.bin
+
+step 3: make the board enter DFU (direct firmware update) mode by holding in the BOOT button and pressing and releasing the NRST button
+
+step 4: see that the board shows with dfu-util -l
+
+step 5: flash the binary to the board with dfu-util -a 0 -D file.bin -s 0x08000000
