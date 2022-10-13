@@ -16,6 +16,10 @@ usb-device = "0.2.9"
 
 [dependencies.stm32-hal2]
 
+#current changes in usb_otg.rs
+# FIFO_DEPTH_WORDS = 320
+# ENDPOINT_COUNT = 7
+# no idea if thats good or not
 path = "/home/todd/code/stm32-hal"
 
 
