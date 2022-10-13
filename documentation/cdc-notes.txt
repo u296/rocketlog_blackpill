@@ -1,0 +1,13 @@
+in the usb implementation, we use a protocol called CDC-ACM
+to emulate a serial port over USB.
+
+Linux has a driver that then recognizes our device as a tty
+and assigns it the device file /dev/ttyACMx, but this tty
+by default has a setting that echoes back everything our 
+device writes to the host. This causes us to enter an infinite
+read loop. To avoid this, run this command
+
+stty --file=/dev/ttyACMx -echo
+
+this needs to be run every time the USB connection is reset,
+hard or soft.
