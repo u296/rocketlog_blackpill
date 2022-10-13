@@ -2,70 +2,60 @@
 #![no_std]
 
 /*
-Hardwired:
+blink error codes
 
-mpu6050 on i2c1, scl = B6, sda = B7
+long  = _
+short = .
+
+_... accelerometer setup failed
+._.. usb write error
+__.. usb write would block
+.._. usb flush would block
+_._. usb flush error
 
 */
 
+/*
+Hardwired:
+
+mpu6050 on i2c1, scl = B6, sda = B7
+usb on pins A11 and A12
+
+*/
 
 use cortex_m::{
     self,
     delay::Delay,
     interrupt::{free, CriticalSection, Mutex},
 };
-use cortex_m_rt::{entry};
+use cortex_m_rt::entry;
 
 use mpu6050::{Mpu6050, Mpu6050Error};
 use stm32_hal2::{
     self, access_global,
     clocks::{self, Clocks},
-    gpio::{OutputType, Pin, PinMode, Port},
-    i2c_f4::{I2c, I2cDevice},
-    make_globals,
-    pac::{self, gpioa, i2c1, GPIOA, I2C1, interrupt},
-    usart::{Usart, UsartConfig},
-    usb_otg::{self, Usb1, Usb1BusType},
+    gpio::{Pin, PinMode, Port},
+    pac::{self},
 };
-
-use usb_device::{
-    class_prelude::{UsbBus, UsbBusAllocator},
-    device::{UsbDevice, UsbDeviceBuilder, UsbVidPid},
-    UsbError,
-};
-use usbd_serial::{SerialPort, USB_CLASS_CDC};
+use usb_device::UsbError;
 
 mod accelerometer;
 mod com;
 
-use core::{cell::*, borrow::BorrowMut};
-
-/* This is quite bad, but the problem is that the buffer
- * must have a static lifetime, and the allocator must
- * be static because the serial and device contain a
- * reference to it, meaning we would need to hold a mutex
- * guard forever, preventing interrupts.
- */
-
-// this might need to have a size of 1280 bytes
-// because that's how many bytes the f411 has in its
-// otg contrtoller FIFO
-static mut EP_BUFFER: [u32; 1024] = [0; 1024];
-static mut GLOB_BUS_ALLOCATOR: Option<UsbBusAllocator<usb_otg::Usb1BusType>> = None;
-
-make_globals!(
-    (GLOB_USB_SERIAL, SerialPort<usb_otg::Usb1BusType>),
-    (GLOB_USB_DEVICE, UsbDevice<usb_otg::Usb1BusType>),
-    (MESSAGE, u8),
-    (ERROR, UsbError),
-    (ERROR_SET, ())
-);
+fn write_vec_to_slice(x: [f32; 3], slice: &mut [u8]) {
+    if slice.len() < 12 {
+        return // slice not long enough
+    }
+    slice[0..4].copy_from_slice(&x[0].to_le_bytes());
+    slice[4..8].copy_from_slice(&x[1].to_le_bytes());
+    slice[8..12].copy_from_slice(&x[2].to_le_bytes());
+}
 
 #[entry]
 fn main() -> ! {
     let mut cp = cortex_m::Peripherals::take().unwrap();
 
-    let dp = pac::Peripherals::take().unwrap();
+    let mut dp = pac::Peripherals::take().unwrap();
 
     let clocks = Clocks {
         ..Default::default()
@@ -81,119 +71,41 @@ fn main() -> ! {
     let mut delay = Delay::new(cp.SYST, clocks.systick());
     let mut led = Pin::new(Port::C, 13, PinMode::Output);
 
-    // turn on usb power
-    dp.RCC.apb1enr.modify(|_, w| w.pwren().set_bit());
+    com::usb::setup(
+        dp.OTG_FS_GLOBAL,
+        dp.OTG_FS_DEVICE,
+        dp.OTG_FS_PWRCLK,
+        clocks.hclk(),
+        &mut dp.RCC,
+    );
 
-    //dp.PWR.csr.modify(|_,w| w.)
+    let mut accelerometer =
+        accelerometer::setup_accelerometer(dp.I2C1, &clocks, &mut delay, &mut led);
 
-    
-
-    // setup pins, check datasheet page 47
-    let mut usb_dm = Pin::new(Port::A, 11, PinMode::Alt(10));
-    let mut usb_dp = Pin::new(Port::A, 12, PinMode::Alt(10));
-    usb_dm.output_type(OutputType::PushPull);
-    usb_dp.output_type(OutputType::PushPull);
-
-    //com::led::led_message_loop(&mut delay, &mut led, 0b1, 1);
-    free(|cs| {
-        let usb = usb_otg::Usb1::new(
-            dp.OTG_FS_GLOBAL,
-            dp.OTG_FS_DEVICE,
-            dp.OTG_FS_PWRCLK,
-            clocks.hclk(),
-        );
-
-        //com::led::led_message_loop(&mut delay, &mut led, 0b101, 3);
-        unsafe {
-            GLOB_BUS_ALLOCATOR = Some(usb_otg::Usb1BusType::new(usb, &mut EP_BUFFER));
-            GLOB_USB_SERIAL
-                .borrow(cs)
-                .replace(Some(SerialPort::new(GLOB_BUS_ALLOCATOR.as_ref().unwrap())));
-            GLOB_USB_DEVICE.borrow(cs).replace(Some(
-                UsbDeviceBuilder::new(
-                    GLOB_BUS_ALLOCATOR.as_ref().unwrap(),
-                    UsbVidPid(0x16c0, 0x27dd),
-                )
-                .manufacturer("u296")
-                .product("usart")
-                .serial_number("sn")
-                .device_class(USB_CLASS_CDC)
-                .build(),
-            ));
-        }
-
-        MESSAGE.borrow(cs).replace(Some(1));
-    });
-
-    // enable interrupts
-    unsafe {
-        cortex_m::peripheral::NVIC::unmask(pac::interrupt::OTG_FS);
-        cp.NVIC.set_priority(pac::interrupt::OTG_FS, 1); // set high priority
-    };
-
+    let mut loops = 0;
 
     loop {
-        com::led::blink_on(&mut delay, &mut led, 100);
-        delay.delay_ms(100);
+        if loops % 50 == 0 {
+            com::led::toggle(&mut led);
+        }
 
-        
+        //delay.delay_ms(1);
+
+        let acc = accelerometer.get_acc().unwrap();
+
+        let mut message_buffer = [0u8; 64];
+
+        write_vec_to_slice(acc, &mut message_buffer);
+        message_buffer[12] = b'\n';
+
+        // message length is 13, 12 bytes of vector and 1 newline
 
         free(|cs| {
-            access_global!(MESSAGE, message, cs);
-
-            *message += 1;
+            com::usb::get_reply().borrow(cs).replace(Some((message_buffer, 13)))
         });
 
-        
-
+        loops += 1;
     }
-
-
-}
-
-
-
-#[interrupt]
-fn OTG_FS() {
-    free(|cs| {
-        access_global!(GLOB_USB_SERIAL, usb_serial, cs);
-        access_global!(GLOB_USB_DEVICE, usb_device, cs);
-        access_global!(MESSAGE, message, cs);
-
-        /* poll only returns true when some event has happened,
-         * like a new packet coming in. This means that if poll
-         * isn't returning true, nothing is left to read from the
-         * host, and nothing is left to send i presume
-         */
-        if !usb_device.poll(&mut [usb_serial]) {
-            return
-        }
-
-        let mut buf = [0; 128];
-
-        
-
-        // if we don't read it seems like some buffer overflows and the
-        // board panics
-        match usb_serial.read(&mut buf) {
-            Ok(count) => {
-
-            },
-            Err(UsbError::WouldBlock) => {},
-            Err(e) => {}
-        }
-
-        if *message % 5 == 0 { // every 5 blinks, every second
-            match usb_serial.write(b"A\n") {
-                Ok(count) => {
-
-                },
-                Err(UsbError::WouldBlock) => {},
-                Err(e) => {}
-            }
-        }
-        
-    });
 }
 
 #[panic_handler]
