@@ -1,0 +1,10 @@
+There seems to be some packet loss over the usb protocol, and the 
+readings sent along are sometimes garbage. At first i thought this
+was an issue with the usb implementation, since the library's values
+don't seem to align with the reference manual.
+
+However, when testing I reseated the wires to the accelerometer and
+found out that the error rate suddenly changed drastically for all
+EP counts in the library, suggesting that this is an electrical issue,
+something might be interfering with the usb connection. Maybe using an
+external powersupply for the board would help?
