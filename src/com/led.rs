@@ -35,9 +35,9 @@ pub fn blink_on(delay: &mut Delay, led: &mut Pin, millis: u32) {
 
 /// The pattern will be displayed from LSB to MSB
 pub fn led_message_loop(delay: &mut Delay, led: &mut Pin, pattern: u32, len: usize) -> ! {
-    let long_delay = 500;
-    let short_delay = 200;
-    let pulse_interval = 50;
+    let long_delay = 1000;
+    let short_delay = 500;
+    let pulse_interval = 100;
     let repeat_interval = 3000;
 
 
