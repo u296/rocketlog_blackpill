@@ -8,6 +8,9 @@ use stm32_hal2::{
     pac::{i2c1, I2C1},
 };
 
+/// This expects the mpu6050 to be connected as follows
+/// * scl to B6
+/// * sda to B7
 pub fn setup_accelerometer(
     regs: I2C1,
     clocks: &Clocks,
