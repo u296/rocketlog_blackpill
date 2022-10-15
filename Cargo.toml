@@ -13,6 +13,11 @@ embedded-hal = "*" # depends on hal, use automatic version
 usbd-serial = "0.1.1"
 usb-device = "0.2.9"
 
+[dependencies.sx127x_lora]
+path = "/home/todd/code/sx127x_lora"
+#version = "0.3.1"
+
+#features = ["version_0x09"]
 
 [dependencies.stm32-hal2]
 
